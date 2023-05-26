@@ -13,7 +13,6 @@ final class MainViewController: UIViewController {
     private lazy var searchController: UISearchController = {
         let controller = UISearchController()
         controller.searchBar.placeholder = "検索"
-        controller.searchBar.tintColor = .systemMint
         controller.obscuresBackgroundDuringPresentation = false
         return controller
     }()
@@ -63,8 +62,10 @@ extension MainViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath) as! RepositoryCell
         
-//        let repo = repos[indexPath.row]
-//        cell.text = repo
+        let repo = repos[indexPath.row]
+        cell.imageView?.image = UIImage(systemName: "person")
+        cell.textLabel?.text = repo
+        cell.detailTextLabel?.text = "detail"
         return cell
     }
     
