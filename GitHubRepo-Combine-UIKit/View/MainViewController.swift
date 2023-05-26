@@ -7,10 +7,11 @@
 
 import UIKit
 import SnapKit
+import Combine
 
 final class MainViewController: UIViewController {
     
-    private lazy var searchController: UISearchController = {
+    private let searchController: UISearchController = {
         let controller = UISearchController()
         controller.searchBar.placeholder = "検索"
         controller.obscuresBackgroundDuringPresentation = false
@@ -23,6 +24,17 @@ final class MainViewController: UIViewController {
         tableView.dataSource = self
         tableView.register(RepositoryCell.self, forCellReuseIdentifier: cellID)
         return tableView
+    }()
+    
+    private let indicator: UIActivityIndicatorView = {
+        let indicator = UIActivityIndicatorView()
+        indicator.style = .medium
+        indicator.color = .white
+        indicator.backgroundColor = .systemGray
+        indicator.layer.cornerRadius = 5.0
+        indicator.layer.opacity = 0.8
+        indicator.isHidden = true
+        return indicator
     }()
     
     let repos = ["aaa", "bbb", "ccc"]
@@ -45,9 +57,15 @@ final class MainViewController: UIViewController {
         view.backgroundColor = .white
         
         view.addSubview(repositoryTableView)
+        view.addSubview(indicator)
         
         repositoryTableView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
+        }
+        
+        indicator.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+            make.size.equalTo(CGSize(width: 100, height: 100))
         }
     }
     
