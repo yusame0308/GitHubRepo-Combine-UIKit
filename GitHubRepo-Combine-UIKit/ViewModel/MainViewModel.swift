@@ -40,6 +40,8 @@ final class MainViewModel {
     
     @MainActor private func setupList(_ list: [GitHubRepo]) {
         listSubject.send(list)
+        // 追加していくこともできる
+        // listSubject.send(listSubject.value + Array(list[...2]))
     }
     
     @MainActor private func showErrorAlert(_ message: String) {

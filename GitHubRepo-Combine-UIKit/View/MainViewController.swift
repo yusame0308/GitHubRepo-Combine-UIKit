@@ -12,6 +12,9 @@ import SafariServices
 
 final class MainViewController: UIViewController {
     
+    private typealias DataSource = UITableViewDiffableDataSource<Int, GitHubRepo>
+    private typealias Snapshot = NSDiffableDataSourceSnapshot<Int, GitHubRepo>
+    
     private lazy var searchController: UISearchController = {
         let controller = UISearchController()
         controller.searchBar.delegate = self
@@ -23,7 +26,6 @@ final class MainViewController: UIViewController {
     private lazy var repositoryTableView: UITableView = {
         let tableView = UITableView()
         tableView.delegate = self
-        tableView.dataSource = self
         tableView.register(RepositoryCell.self, forCellReuseIdentifier: cellID)
         return tableView
     }()
@@ -39,12 +41,8 @@ final class MainViewController: UIViewController {
         return indicator
     }()
     
-    var repos = [GitHubRepo]() {
-        didSet {
-            repositoryTableView.reloadData()
-        }
-    }
     private let cellID = "cellID"
+    private lazy var dataSource = configureDataSource()
     
     private var subscriptions = Set<AnyCancellable>()
     private let viewModel: MainViewModelable = MainViewModel()
@@ -82,7 +80,7 @@ final class MainViewController: UIViewController {
     private func bind() {
         viewModel.listSubject
             .sink { [weak self] repos in
-                self?.repos = repos
+                self?.createSnapshot(with: repos)
             }
             .store(in: &subscriptions)
         
@@ -103,29 +101,32 @@ final class MainViewController: UIViewController {
             .store(in: &subscriptions)
         
         viewModel.errorAlertSubject
-            .sink { [weak self] in
-                let alert = UIAlertController(title: "エラー", message: $0, preferredStyle: .alert)
+            .sink { [weak self] message in
+                let alert = UIAlertController(title: "エラー", message: message, preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "OK", style: .default))
                 self?.present(alert, animated: true)
             }
             .store(in: &subscriptions)
     }
     
+    private func configureDataSource() -> DataSource {
+        return UITableViewDiffableDataSource(tableView: repositoryTableView) { [weak self] tableView, indexPath, repo in
+            let cell = tableView.dequeueReusableCell(withIdentifier: self!.cellID, for: indexPath) as? RepositoryCell
+            cell?.render(repo: repo)
+            return cell
+        }
+    }
+    
+    private func createSnapshot(with repos: [GitHubRepo]) {
+        var snapshot = Snapshot()
+        snapshot.appendSections([0])
+        snapshot.appendItems(repos)
+        dataSource.apply(snapshot, animatingDifferences: true)
+    }
+    
 }
 
-extension MainViewController: UITableViewDelegate, UITableViewDataSource {
-    
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return repos.count
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath) as! RepositoryCell
-        
-        cell.render(repo: repos[indexPath.row])
-        
-        return cell
-    }
+extension MainViewController: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
@@ -140,6 +141,13 @@ extension MainViewController: UISearchBarDelegate {
         Task {
             await viewModel.fetch(query: searchBar.text)
         }
+    }
+    
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        // DataSourceに追加することもできる
+        // var snapshot = dataSource.snapshot()
+        // snapshot.insertItems([GitHubRepo(fullName: "test", stargazersCount: 1, htmlUrl: "url", owner: GitHubRepoOwner(avatarUrl: ""))], afterItem: viewModel.listSubject.value[1])
+        // dataSource.apply(snapshot, animatingDifferences: true)
     }
     
 }

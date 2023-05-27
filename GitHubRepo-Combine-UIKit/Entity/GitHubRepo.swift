@@ -5,7 +5,7 @@
 //  Created by 小原宙 on 2023/05/26.
 //
 
-struct GitHubRepo: Codable {
+struct GitHubRepo: Codable, Hashable {
     let fullName: String
     let stargazersCount: Int
     let htmlUrl: String
@@ -23,7 +23,7 @@ struct GitHubRepo: Codable {
     }
 }
 
-struct GitHubRepoOwner: Codable {
+struct GitHubRepoOwner: Codable, Hashable {
     let avatarUrl: String
     
     enum CodingKeys: String, CodingKey {
