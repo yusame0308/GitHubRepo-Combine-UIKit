@@ -6,31 +6,63 @@
 //
 
 import XCTest
+import Combine
 @testable import GitHubRepo_Combine_UIKit
 
 final class GitHubRepo_Combine_UIKitTests: XCTestCase {
-
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+    
+    private var subscriptions = Set<AnyCancellable>()
+    
+    func testFetchWithSuccess() async throws {
+        let mockAPIClient: APIClientable = MockAPIClient(isSuccess: true)
+        let viewModel = MainViewModel(apiClient: mockAPIClient)
+        var isLoading: Bool = true
+        
+        viewModel.isLoadingSubject
+            .sink {
+                XCTAssertEqual($0, isLoading)
+                isLoading.toggle()
+            }
+            .store(in: &subscriptions)
+        
+        await viewModel.fetch(query: "test")
+        XCTAssertEqual(viewModel.listSubject.value.count, 1)
     }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    
+    func testFetchWithFailure() async throws {
+        let mockAPIClient: APIClientable = MockAPIClient(isSuccess: false)
+        let viewModel = MainViewModel(apiClient: mockAPIClient)
+        var isLoading: Bool = true
+        
+        viewModel.isLoadingSubject
+            .sink {
+                XCTAssertEqual($0, isLoading)
+                isLoading.toggle()
+            }
+            .store(in: &subscriptions)
+        
+        viewModel.errorAlertSubject
+            .sink {
+                XCTAssertNotNil($0)
+            }
+            .store(in: &subscriptions)
+        
+        await viewModel.fetch(query: "test")
+        XCTAssertEqual(viewModel.listSubject.value.count, 0)
     }
-
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // Any test you write for XCTest can be annotated as throws and async.
-        // Mark your test throws to produce an unexpected failure when your test encounters an uncaught error.
-        // Mark your test async to allow awaiting for asynchronous code to complete. Check the results with assertions afterwards.
+    
+    func testHandleDidSelectRowAt() async throws {
+        let mockAPIClient: APIClientable = MockAPIClient(isSuccess: true)
+        let viewModel = MainViewModel(apiClient: mockAPIClient)
+        
+        viewModel.showWebViewSubject
+            .sink {
+                XCTAssertNotNil($0)
+            }
+            .store(in: &subscriptions)
+        
+        await viewModel.fetch(query: "test")
+        viewModel.handleDidSelectRowAt(IndexPath(row: 0, section: 0))
     }
-
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
-        }
-    }
-
+    
 }
